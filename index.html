@@ -119,6 +119,7 @@
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
+    <div id="turnstileWidget" aria-hidden="true"></div>
 
     <!-- Navbar -->
     <header class="sticky top-0 z-30 bg-[#FDFBF9]/85 backdrop-blur-md border-b border-rose-100">
@@ -374,6 +375,9 @@
         let isPhotoProcessing = false;
         const cloudConfig = window.GIRLCODE_CONFIG || {};
         let cloudClient = null;
+        let turnstileLoadPromise = null;
+        let turnstileWidgetId = null;
+        let captchaPending = null;
 
         function normalizePost(post) {
             return {
@@ -463,6 +467,84 @@
                 throw new Error('Biblioteca Supabase indisponibilă. Verifică conexiunea la internet.');
             }
             return window.supabase.createClient(cloudConfig.supabaseUrl, cloudConfig.supabasePublishableKey);
+        }
+
+        function settleCaptcha(error, token) {
+            if (!captchaPending) return;
+            clearTimeout(captchaPending.timeout);
+            const pending = captchaPending;
+            captchaPending = null;
+            if (error) pending.reject(error);
+            else pending.resolve(token);
+        }
+
+        async function getTurnstileToken() {
+            if (!cloudConfig.turnstileSiteKey) {
+                throw new Error('Publicarea online necesită configurarea cheii publice Turnstile.');
+            }
+            if (!turnstileLoadPromise) {
+                turnstileLoadPromise = new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                    script.async = true;
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('CAPTCHA nu a putut fi încărcat.'));
+                    document.head.appendChild(script);
+                });
+            }
+            await turnstileLoadPromise;
+
+            if (captchaPending) throw new Error('Verificarea CAPTCHA este deja în curs.');
+            if (turnstileWidgetId === null) {
+                turnstileWidgetId = window.turnstile.render('#turnstileWidget', {
+                    sitekey: cloudConfig.turnstileSiteKey,
+                    size: 'invisible',
+                    execution: 'execute',
+                    callback: token => settleCaptcha(null, token),
+                    'expired-callback': () => settleCaptcha(new Error('Verificarea CAPTCHA a expirat. Încearcă din nou.')),
+                    'error-callback': () => settleCaptcha(new Error('Verificarea CAPTCHA a eșuat. Încearcă din nou.'))
+                });
+            } else {
+                window.turnstile.reset(turnstileWidgetId);
+            }
+
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    settleCaptcha(new Error('Verificarea CAPTCHA a expirat. Încearcă din nou.'));
+                }, 120000);
+                captchaPending = { resolve, reject, timeout };
+                try {
+                    window.turnstile.execute(turnstileWidgetId);
+                } catch (error) {
+                    settleCaptcha(error);
+                }
+            });
+        }
+
+        function createSubmissionFormData(values, captchaToken) {
+            const formData = new FormData();
+            Object.entries(values).forEach(([key, value]) => formData.set(key, value));
+            formData.set('captchaToken', captchaToken);
+            return formData;
+        }
+
+        async function sendCommunitySubmission(formData) {
+            const response = await fetch(`${cloudConfig.supabaseUrl}/functions/v1/submit-community-content`, {
+                method: 'POST',
+                headers: {
+                    apikey: cloudConfig.supabasePublishableKey,
+                    Authorization: `Bearer ${cloudConfig.supabasePublishableKey}`
+                },
+                body: formData
+            });
+            let result;
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error('Serverul a returnat un răspuns invalid.');
+            }
+            if (!response.ok) throw new Error(result.error || 'Trimiterea nu a reușit.');
+            return result;
         }
 
         async function loadCloudPosts() {
@@ -568,16 +650,6 @@
             } finally {
                 isPhotoProcessing = false;
             }
-        }
-
-        async function uploadCloudPhoto(dataUrl) {
-            const imageBlob = await (await fetch(dataUrl)).blob();
-            const photoPath = `${crypto.randomUUID()}.jpg`;
-            const { error } = await cloudClient.storage
-                .from('community-photos')
-                .upload(photoPath, imageBlob, { contentType: 'image/jpeg', upsert: false });
-            if (error) throw error;
-            return photoPath;
         }
 
         function getCloudVisitorId() {
@@ -716,14 +788,15 @@
 
             if (cloudClient) {
                 try {
-                    const { data, error } = await cloudClient.rpc('submit_comment', {
-                        p_post_id: postId,
-                        p_author: author,
-                        p_body: text
-                    });
-                    if (error) throw error;
+                    const captchaToken = await getTurnstileToken();
+                    const data = await sendCommunitySubmission(createSubmissionFormData({
+                        action: 'comment',
+                        post_id: postId,
+                        author,
+                        body: text
+                    }, captchaToken));
                     post.comments.push({
-                        id: data,
+                        id: data.id,
                         author,
                         text,
                         time: new Date().toLocaleString('ro-RO')
@@ -930,15 +1003,20 @@
 
             if (cloudClient) {
                 try {
-                    const photoPath = selectedPhoto ? await uploadCloudPhoto(selectedPhoto) : null;
-                    const { error } = await cloudClient.rpc('submit_post', {
-                        p_author: author,
-                        p_category: category,
-                        p_title: title,
-                        p_body: body,
-                        p_photo_path: photoPath
-                    });
-                    if (error) throw error;
+                    const captchaToken = await getTurnstileToken();
+                    const formData = createSubmissionFormData({
+                        action: 'post',
+                        author,
+                        category,
+                        title,
+                        body
+                    }, captchaToken);
+                    if (selectedPhoto) {
+                        const photoData = selectedPhoto.split(',');
+                        const photoBytes = Uint8Array.from(atob(photoData[1]), character => character.charCodeAt(0));
+                        formData.set('photo', new Blob([photoBytes], { type: 'image/jpeg' }), 'photo.jpg');
+                    }
+                    await sendCommunitySubmission(formData);
                     await loadCloudPosts();
                     document.getElementById('newPostForm').reset();
                     selectedPhoto = '';

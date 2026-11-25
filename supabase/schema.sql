@@ -43,7 +43,7 @@ create or replace function public.contains_blocked_language(input_text text)
 returns boolean
 language sql
 immutable
-set search_path = public, extensions, pg_temp
+set search_path = pg_catalog, pg_temp
 as $$
     select extensions.unaccent(lower(coalesce(input_text, ''))) ~
         '(^|[^[:alnum:]])(bou(le)?|caca|cacat(uri)?|cretin(a|i)?|curv(a|e)?|fut(u|ut)?|handicap(at|ata)?|idiot(a|i|e)?|jeg(os|osi)?|muie|nesimtit(a|i)?|pizda|prost(a|e|i)?|ratat(a|i)?|tampit(a|i)?)([^[:alnum:]]|$)';
@@ -59,7 +59,7 @@ create or replace function public.submit_post(
 returns uuid
 language plpgsql
 security definer
-set search_path = public, extensions, pg_temp
+set search_path = pg_catalog, pg_temp
 as $$
 declare
     new_post_id uuid;
@@ -68,6 +68,17 @@ begin
         or char_length(trim(coalesce(p_title, ''))) not between 5 and 140
         or char_length(trim(coalesce(p_body, ''))) not between 1 and 3000 then
         raise exception 'Textul nu respectă limitele permise.' using errcode = '22023';
+    end if;
+
+    if p_category is null or p_category not in (
+        'Machiaj & Skincare',
+        'Idei de Cadouri',
+        'Fashion & Outfit',
+        'Relații & Sfaturi',
+        'Lifestyle & Productivitate',
+        'Vacanțe'
+    ) then
+        raise exception 'Categoria nu este validă.' using errcode = '22023';
     end if;
 
     if p_photo_path is not null and p_photo_path !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$' then
@@ -94,7 +105,7 @@ create or replace function public.submit_comment(
 returns uuid
 language plpgsql
 security definer
-set search_path = public, extensions, pg_temp
+set search_path = pg_catalog, pg_temp
 as $$
 declare
     new_comment_id uuid;
@@ -126,7 +137,7 @@ create or replace function public.toggle_post_like(p_post_id uuid, p_visitor_id 
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = pg_catalog, pg_temp
 as $$
 declare
     is_liked boolean;
@@ -179,8 +190,8 @@ revoke all on function public.contains_blocked_language(text) from public, anon,
 revoke all on function public.submit_post(text, text, text, text, text) from public, anon, authenticated;
 revoke all on function public.submit_comment(uuid, text, text) from public, anon, authenticated;
 revoke all on function public.toggle_post_like(uuid, uuid) from public, anon, authenticated;
-grant execute on function public.submit_post(text, text, text, text, text) to anon, authenticated;
-grant execute on function public.submit_comment(uuid, text, text) to anon, authenticated;
+grant execute on function public.submit_post(text, text, text, text, text) to service_role;
+grant execute on function public.submit_comment(uuid, text, text) to service_role;
 grant execute on function public.toggle_post_like(uuid, uuid) to anon, authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -195,8 +206,3 @@ create policy community_photos_read on storage.objects
     for select to anon, authenticated using (bucket_id = 'community-photos');
 
 drop policy if exists community_photos_upload on storage.objects;
-create policy community_photos_upload on storage.objects
-    for insert to anon, authenticated with check (
-        bucket_id = 'community-photos'
-        and name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$'
-    );

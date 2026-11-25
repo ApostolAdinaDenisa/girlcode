@@ -1,0 +1,10 @@
+project_id = "girlcode"
+
+[auth]
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+
+[functions.submit-community-content]
+verify_jwt = false
