@@ -713,14 +713,22 @@
 
             if (cloudClient) {
                 try {
-                    const { error } = await cloudClient.rpc('submit_comment', {
+                    const { data, error } = await cloudClient.rpc('submit_comment', {
                         p_post_id: postId,
                         p_author: author,
                         p_body: text
                     });
                     if (error) throw error;
+                    post.comments.push({
+                        id: data,
+                        author,
+                        text,
+                        time: new Date().toLocaleString('ro-RO')
+                    });
                     form.reset();
-                    showStatus('Comentariul a fost trimis spre aprobare.');
+                    openComments[postId] = true;
+                    renderPosts();
+                    showStatus('Sfatul a fost publicat.');
                 } catch (error) {
                     showStatus(`Comentariul nu a putut fi trimis: ${error.message}`);
                 }
@@ -806,7 +814,7 @@
                         <!-- Actions -->
                         <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
                             <button 
-                                onclick="toggleSlay(${post.id})" 
+                                onclick='toggleSlay(${JSON.stringify(post.id)})'
                                 class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 ${
                                     post.liked 
                                     ? 'bg-rose-500 text-white shadow-2xs' 
@@ -818,7 +826,7 @@
                             </button>
 
                             <button 
-                                onclick="toggleCommentsSection(${post.id})" 
+                                onclick='toggleCommentsSection(${JSON.stringify(post.id)})'
                                 class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-600 transition"
                             >
                                 <span>${post.comments.length} ${post.comments.length === 1 ? 'sfat' : 'sfaturi'}</span>
@@ -839,7 +847,7 @@
                                 `).join('')}
 
                                 <!-- Add Comment Form -->
-                                <form onsubmit="addComment(event, ${post.id})" class="flex flex-col sm:flex-row gap-2 pt-1">
+                                <form onsubmit='addComment(event, ${JSON.stringify(post.id)})' class="flex flex-col sm:flex-row gap-2 pt-1">
                                     <input 
                                         type="text" 
                                         placeholder="Nume (opțional)" 

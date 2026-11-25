@@ -77,8 +77,8 @@ begin
         raise exception 'Textul conține un cuvânt jignitor.' using errcode = '22023';
     end if;
 
-    insert into public.posts (author, category, title, body, photo_path)
-    values (trim(p_author), p_category, trim(p_title), trim(p_body), p_photo_path)
+    insert into public.posts (author, category, title, body, photo_path, status)
+    values (trim(p_author), p_category, trim(p_title), trim(p_body), p_photo_path, 'published')
     returning id into new_post_id;
 
     return new_post_id;
@@ -113,8 +113,8 @@ begin
         raise exception 'Discuția nu este disponibilă.' using errcode = '22023';
     end if;
 
-    insert into public.comments (post_id, author, body)
-    values (p_post_id, trim(p_author), trim(p_body))
+    insert into public.comments (post_id, author, body, status)
+    values (p_post_id, trim(p_author), trim(p_body), 'published')
     returning id into new_comment_id;
 
     return new_comment_id;

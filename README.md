@@ -25,7 +25,7 @@ window.GIRLCODE_CONFIG = {
 
 ## Publicarea și moderarea conținutului
 
-Postările și comentariile noi sunt publicate automat după verificarea limbajului, care rulează atât în browser, cât și pe server. Pentru un proiect Supabase deja configurat, rulează o singură dată scriptul `supabase/auto-publish.sql` din **Supabase → SQL Editor**. Pentru proiecte noi, `supabase/schema.sql` configurează publicarea automată.
+Postările și comentariile sunt publicate automat după verificarea limbajului, care rulează atât în browser, cât și pe server. Pentru un proiect Supabase deja configurat, rulează scriptul `supabase/auto-publish.sql` din **Supabase → SQL Editor**; acesta publică și conținutul mai vechi rămas `pending`. Pentru proiecte noi, `supabase/schema.sql` configurează publicarea automată.
 
 Filtrul blochează anumite cuvinte jignitoare, dar nu poate detecta orice conținut nepotrivit sau spam. Verifică periodic postările în **Supabase → Table Editor → posts** și comentariile în **comments**; poți schimba statusul unui element în `rejected`. RLS permite vizitatorilor să citească doar conținutul cu status `published` și nu le permite să modifice direct tabelele.
 
