@@ -10,7 +10,8 @@ create table if not exists public.posts (
         'Idei de Cadouri',
         'Fashion & Outfit',
         'Relații & Sfaturi',
-        'Lifestyle & Productivitate'
+        'Lifestyle & Productivitate',
+        'Vacanțe'
     )),
     title text not null check (char_length(title) between 5 and 140),
     body text not null check (char_length(body) between 1 and 3000),
