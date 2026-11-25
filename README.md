@@ -27,6 +27,8 @@ window.GIRLCODE_CONFIG = {
 
 Postările și comentariile sunt publicate automat după verificarea limbajului, care rulează atât în browser, cât și pe server. Pentru un proiect Supabase deja configurat, rulează scriptul `supabase/auto-publish.sql` din **Supabase → SQL Editor**; acesta publică și conținutul mai vechi rămas `pending`. Pentru proiecte noi, `supabase/schema.sql` configurează publicarea automată.
 
+Pentru a adăuga întrebările și sfaturile demonstrative din aplicație în baza de date, rulează `supabase/seed-content.sql` din **Supabase → SQL Editor**. Scriptul poate fi rulat din nou fără să dubleze conținutul.
+
 Filtrul blochează anumite cuvinte jignitoare, dar nu poate detecta orice conținut nepotrivit sau spam. Verifică periodic postările în **Supabase → Table Editor → posts** și comentariile în **comments**; poți schimba statusul unui element în `rejected`. RLS permite vizitatorilor să citească doar conținutul cu status `published` și nu le permite să modifice direct tabelele.
 
 Fotografiile din bucketul public pot fi accesate de oricine are URL-ul. Pentru lansare publică, adaugă și protecție anti-spam (de exemplu CAPTCHA/Turnstile sau autentificare) și nu cere utilizatorilor să încarce fotografii private.
