@@ -186,7 +186,7 @@
         </div>
 
         <div id="appStatus" role="status" aria-live="polite" class="status-message mb-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"></div>
-        <p id="storageNotice" class="mb-6 text-[11px] text-gray-500">Postările și comentariile sunt verificate automat. Conținutul se păstrează doar în acest browser.</p>
+        <p id="storageNotice" class="mb-6 text-[11px] text-gray-500">Postările și comentariile sunt verificate automat.</p>
 
         <!-- Category Filters -->
         <div id="categoryBar" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-6">
@@ -604,7 +604,7 @@
                     storageNotice.textContent = 'Verifică setările bazei de date online.';
                 }
             } else {
-                storageNotice.textContent = 'Modul de previzualizare: conținutul se păstrează doar în acest browser.';
+                storageNotice.textContent = 'Postările și comentariile sunt verificate automat.';
                 try {
                     const database = await openDatabase();
                     let storedPosts = await readStoredPosts(database);
