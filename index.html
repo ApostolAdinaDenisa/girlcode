@@ -596,8 +596,8 @@
                     }
                     cloudClient = createCloudClient();
                     await loadCloudPosts();
-                    storageNotice.textContent = 'Baza de date online este conectată. Postările devin vizibile după aprobare.';
-                    document.querySelector('#newPostForm button[type="submit"]').textContent = 'Trimite spre aprobare';
+                    storageNotice.textContent = 'Baza de date online este conectată. Postările sunt publicate automat după verificarea limbajului.';
+                    document.querySelector('#newPostForm button[type="submit"]').textContent = 'Publică întrebarea';
                 } catch (error) {
                     posts = [];
                     showStatus(`Baza online nu a putut fi accesată: ${error.message}`);
@@ -933,7 +933,7 @@
                     selectedPhoto = '';
                     document.getElementById('photoPreview').classList.add('hidden');
                     showStatus('', 'formStatus');
-                    showStatus('Întrebarea a fost trimisă și va apărea după aprobare.');
+                    showStatus('Întrebarea a fost publicată.');
                     closeModal();
                     selectedCategory = 'Toate';
                     renderCategories();
