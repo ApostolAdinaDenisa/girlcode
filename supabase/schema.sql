@@ -17,7 +17,7 @@ create table if not exists public.posts (
     photo_path text check (
         photo_path is null or photo_path ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$'
     ),
-    status text not null default 'pending' check (status in ('pending', 'published', 'rejected')),
+    status text not null default 'published' check (status in ('pending', 'published', 'rejected')),
     like_count integer not null default 0 check (like_count >= 0),
     created_at timestamptz not null default now()
 );
@@ -27,7 +27,7 @@ create table if not exists public.comments (
     post_id uuid not null references public.posts(id) on delete cascade,
     author text not null check (char_length(author) between 1 and 60),
     body text not null check (char_length(body) between 1 and 1000),
-    status text not null default 'pending' check (status in ('pending', 'published', 'rejected')),
+    status text not null default 'published' check (status in ('pending', 'published', 'rejected')),
     created_at timestamptz not null default now()
 );
 

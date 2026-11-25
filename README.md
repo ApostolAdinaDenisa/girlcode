@@ -1,6 +1,6 @@
 # GirlCode
 
-GirlCode este o aplicație web statică. Fără setare Supabase, datele rămân local în browser pentru previzualizare. Cu Supabase configurat, postările, comentariile și fotografiile se salvează online și pot fi văzute de toți vizitatorii după aprobare.
+GirlCode este o aplicație web statică. Fără setare Supabase, datele rămân local în browser pentru previzualizare. Cu Supabase configurat, postările, comentariile și fotografiile se salvează online și devin vizibile automat după verificarea limbajului.
 
 ## Publicare recomandată
 
@@ -23,15 +23,10 @@ window.GIRLCODE_CONFIG = {
 
 `config.js` este necesar ca site-ul public să se conecteze la baza online. Nu publica niciodată cheia `service_role`.
 
-## Moderarea conținutului
+## Publicarea și moderarea conținutului
 
-Postările și comentariile noi au implicit statusul `pending`. Ele nu apar în feed până când moderatorul le aprobă din **Supabase → Table Editor**, schimbând statusul în `published`; conținutul nepotrivit poate fi marcat `rejected`. RLS nu permite vizitatorilor să citească postări în așteptare sau să modifice direct tabelele.
+Postările și comentariile noi sunt publicate automat după verificarea limbajului, care rulează atât în browser, cât și pe server. Pentru un proiect Supabase deja configurat, rulează o singură dată scriptul `supabase/auto-publish.sql` din **Supabase → SQL Editor**. Pentru proiecte noi, `supabase/schema.sql` configurează publicarea automată.
+
+Filtrul blochează anumite cuvinte jignitoare, dar nu poate detecta orice conținut nepotrivit sau spam. Verifică periodic postările în **Supabase → Table Editor → posts** și comentariile în **comments**; poți schimba statusul unui element în `rejected`. RLS permite vizitatorilor să citească doar conținutul cu status `published` și nu le permite să modifice direct tabelele.
 
 Fotografiile din bucketul public pot fi accesate de oricine are URL-ul. Pentru lansare publică, adaugă și protecție anti-spam (de exemplu CAPTCHA/Turnstile sau autentificare) și nu cere utilizatorilor să încarce fotografii private.
-
-Pentru aprobare prin SQL:
-
-```sql
-update public.posts set status = 'published' where id = 'ID_POSTARE';
-update public.comments set status = 'published' where id = 'ID_COMENTARIU';
-```
