@@ -769,7 +769,7 @@
         }
 
         function toggleCommentsSection(postId) {
-            openComments[postId] = !openComments[postId];
+            openComments[postId] = !(openComments[postId] ?? true);
             renderPosts();
         }
 
